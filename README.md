@@ -13,7 +13,7 @@ Il progetto non ha dipendenze dal progetto presenze: la cartella è un repositor
 ├── src/                    # SPA React (unica applicazione)
 │   ├── lib/supabase.ts     # URL + chiave anon del progetto Supabase (da compilare)
 │   ├── lib/elettorale.ts   # accesso dati: getSeggio/getAllSeggi/putSeggio
-│   ├── pages/              # ComponentiSeggi, ElettoraleStatus, HomePage + pin/iban
+│   ├── pages/              # ComponentiSeggi, ElettoraleStatus + pin/iban
 │   ├── components/         # Frame, SiteHeader
 │   └── tags/               # Icon, Spinner, LoadingButton, CampoInput
 ├── db/setup.sql            # schema + policy RLS + trigger audit (da eseguire in Supabase)
@@ -29,7 +29,8 @@ Il progetto non ha dipendenze dal progetto presenze: la cartella è un repositor
 - `/#/elettorale/{pin}` — scheda di inserimento dati dei componenti di una sezione
   (Presidente, Segretario, Scrutatori) con validazione codice fiscale e IBAN
 - `/#/elettorale_status` — stato di tutte le sezioni con filtri ed export CSV
-- `/` — generatore del link sezione (PIN), che nell'app originale arrivava da presenze
+- `/` — nessuna pagina pubblica: mostra "Pagina non trovata" (le schede si aprono solo
+  con il PIN contenuto nell'URL `/#/elettorale/{pin}`)
 
 ## Sicurezza
 

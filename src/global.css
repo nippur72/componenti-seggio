@@ -1,8 +1,142 @@
+/* Stili globali del progetto host, ripristinati nella migrazione.
+   Fonti originali: _stili.css (prima di bootstrap) e _stili_post.css (dopo bootstrap). */
+
+/* ---- ex _stili.css ---- */
+html,
 body {
-    background-color: #f8f9fa;
+    margin: 0;
+    padding: 0;
+    height: 100%;
 }
 
-/* classe usata dalle pagine (nell'originale da _stili.css) */
+h1 {
+    text-align: center;
+    color: #244669;
+}
+
+h2 {
+    text-align: center;
+}
+
+.weak {
+    color: #666;
+}
+
+.left {
+    text-align: left;
+}
+
+.right {
+    text-align: right;
+}
+
 .center {
     text-align: center;
+}
+
+.bold {
+    font-weight: bold;
+}
+
+.middle {
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.printonly {
+    display: none;
+}
+
+/* ---- ex MainTag: contenitore del sito ---- */
+html,
+body,
+#root {
+    height: 100%;
+}
+
+#root {
+    min-height: 100%;
+}
+
+.site-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    height: 100%;
+}
+
+.site-header-wrap {
+    width: 100%;
+    max-width: 1024px;
+}
+
+/* titolo dell'header: centrato, su piu' righe se serve, leggermente piu' piccolo */
+.site-header-title {
+    display: block;
+    font-size: 1.1rem;
+    line-height: 1.25;
+    white-space: normal;
+    text-align: center;
+}
+
+.site-body {
+    flex-grow: 1;
+    flex-shrink: 0;
+    flex-basis: auto;
+    padding: 0;
+    width: 100%;
+    max-width: 1024px;
+    background-color: #fff;
+    padding-bottom: 2em;
+}
+
+/* nella scheda sezione lo sfondo esterno alle card e' un verde molto chiaro/desaturato */
+.site-body-seggio {
+    background-color: #e8f0e4;
+}
+
+/* ---- ex _stili_post.css: override caricati dopo bootstrap ---- */
+html,
+body {
+    background-color: #ddd;
+}
+
+.form-check-input:only-child {
+    position: relative;
+    top: 0.07rem;
+}
+
+.btn-secondary {
+    color: #292b2c;
+    background-color: #fcfcfc;
+    border-color: #adadad;
+}
+
+.btn-secondary:hover {
+    color: #292b2c;
+    background-color: #e6e6e6;
+    border-color: #adadad;
+}
+
+.form-control {
+    border: 2px solid rgba(0, 0, 0, .15);
+}
+
+/* Bootstrap 5 dipinge lo sfondo di ogni cella (--bs-table-bg = bianco), coprendo
+   lo sfondo alternato impostato sul <tbody> (verde/bianco) come in Bootstrap 4.
+   Rendo le celle trasparenti per farlo tornare visibile. */
+.table {
+    --bs-table-bg: transparent;
+}
+
+@media print {
+    .noprint {
+        display: none;
+    }
+    .printonly {
+        display: block;
+    }
+    body {
+        font-size: 12px;
+    }
 }

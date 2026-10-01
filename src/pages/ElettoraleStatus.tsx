@@ -2,6 +2,7 @@
 // Differenze: import rimappati, accesso diretto a Supabase (lib/elettorale.ts)
 // e navigazione con useHistory di react-router al posto di AppRoutes.elettorale().
 import { useQuery } from "@tanstack/react-query";
+import { css } from "@emotion/css";
 import { ComponenteDiSeggio } from "./ComponentiSeggi";
 import { Table, ButtonGroup, Button, Badge } from "reactstrap";
 import { Frame } from "../components/Frame";
@@ -12,27 +13,61 @@ import { useState } from "react";
 import { useHistory } from "react-router-dom";
 import { Icon } from "../tags/Icon";
 import { sez_to_pin } from "./pin";
+import { exportComponentiToCsv, getRuoloName } from "./export_csv";
+import { capitalizeAll } from "../lib/utils";
 
-function getRuoloName(ruolo: string): string {
-    if (ruolo === 'P') return 'Presidente';
-    if (ruolo === 'S') return 'Scrutatore';
-    return 'Segretario';
-}
+// Sotto il breakpoint lg la tabella diventa un elenco impilato: ogni campo su
+// una riga con la sua etichetta (presa da data-label), senza scroll orizzontale.
+const statusTableStyle = css({
+    '@media (max-width: 991.98px)': {
+        '&': {
+            display: 'block'
+        },
+        '& > thead': {
+            display: 'none'
+        },
+        '& > tbody': {
+            display: 'block',
+            marginBottom: '0.75rem',
+            border: '1px solid rgba(0, 0, 0, 0.175)'
+        },
+        '& > tbody > tr': {
+            display: 'block'
+        },
+        '& > tbody > tr + tr': {
+            borderTop: '1px solid rgba(0, 0, 0, 0.1)'
+        },
+        '& > tbody > tr > th': {
+            display: 'block',
+            border: 'none',
+            borderBottom: '1px solid rgba(0, 0, 0, 0.175)',
+            padding: '0.5rem 0.75rem'
+        },
+        '& > tbody > tr > td': {
+            display: 'flex',
+            alignItems: 'baseline',
+            gap: '0.5rem',
+            border: 'none',
+            padding: '0.2rem 0.75rem',
+            overflowWrap: 'anywhere',
+            wordBreak: 'break-word'
+        },
+        '& > tbody > tr > td::before': {
+            content: 'attr(data-label)',
+            flex: '0 0 6rem',
+            fontFamily: 'var(--bs-body-font-family)',
+            fontSize: '0.75rem',
+            fontWeight: 600,
+            letterSpacing: '0.02em',
+            textTransform: 'uppercase',
+            color: '#666'
+        }
+    }
+});
 
-function sanitizeNameForCsv(name: string | undefined | null): string {
-    if (!name) return "";
-    let upper = name.toUpperCase();
-
-    // Standardize quotes, backticks, and other accents to apostrophe
-    upper = upper.replace(/[`'’‘´]/g, "'");
-
-    const accentMap: Record<string, string> = {
-        'À': "A'", 'È': "E'", 'É': "E'", 'Ì': "I'", 'Ò': "O'", 'Ù': "U'"
-    };
-    let replaced = upper.replace(/[ÀÈÉÌÒÙ]/g, m => accentMap[m] || m);
-
-    // Keep only A-Z, spaces, and standard apostrophe
-    return replaced.replace(/[^A-Z\s']/g, '');
+// con cognome "---" il componente e' considerato completato (seggio non nominato / da escludere)
+function isCompleto(c: ComponenteDiSeggio): boolean {
+    return c.cognome.trim() === "---" || (!!c.nome && !!c.cognome && !!c.codice_fiscale);
 }
 
 export function ElettoraleStatus() {
@@ -48,8 +83,8 @@ export function ElettoraleStatus() {
     if (isLoading) return <Frame><Spinner>Caricamento...</Spinner></Frame>;
     if (error) return <Frame><Alert color="danger">Errore: {error.message}</Alert></Frame>;
 
-    const completi = componenti?.filter(c => c.nome && c.cognome && c.codice_fiscale) || [];
-    const daCompletare = componenti?.filter(c => !c.nome || !c.cognome || !c.codice_fiscale) || [];
+    const completi = componenti?.filter(isCompleto) || [];
+    const daCompletare = componenti?.filter(c => !isCompleto(c)) || [];
 
     const incompleteSezioniKeys = new Set(daCompletare.map(c => `${c.sez}-${c.speciale}`));
     const sezioniIncomplete = componenti?.filter(c => incompleteSezioniKeys.has(`${c.sez}-${c.speciale}`)) || [];
@@ -87,41 +122,8 @@ export function ElettoraleStatus() {
 
     const handleExportCsv = () => {
         if (!filteredComponenti) return;
-
-        const now = new Date();
-        const timestamp = `${now.getFullYear()}.${(now.getMonth() + 1).toString().padStart(2, '0')}.${now.getDate().toString().padStart(2, '0')}_${now.getHours().toString().padStart(2, '0')}.${now.getMinutes().toString().padStart(2, '0')}.${now.getSeconds().toString().padStart(2, '0')}`;
-        const filename = `elettorale_status_${timestamp}.csv`;
-
-        const headers = ["Sezione", "Ruolo", "Cognome", "Nome", "Codice Fiscale", "IBAN", "Telefono"];
-
-        const csvRows = [
-            headers.join('\t'),
-            ...filteredComponenti.map(c => [
-                `"${c.sez}${c.speciale ? 'S' : ''}"`,
-                `"${getRuoloName(c.ruolo)}"`,
-                `"${sanitizeNameForCsv(c.cognome)}"`,
-                `"${sanitizeNameForCsv(c.nome)}"`,
-                `"${c.codice_fiscale}"`,
-                `"${c.IBAN}"`,
-                `"${c.telefono}"`
-            ].join('\t'))
-        ];
-        const csvString = "sep=\t\n"+csvRows.join('\n');
-
-        const blob = new Blob(["\uFEFF" + csvString], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        exportComponentiToCsv(filteredComponenti);
     };
-
-    function capitalize(s: string) {
-         if (s.length === 0) return s;
-         return s.split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()).join(' ');
-    }
 
     return (
         <div>
@@ -144,10 +146,9 @@ export function ElettoraleStatus() {
                </ButtonGroup>
             </div>
 
-            <Table bordered responsive>
+            <Table bordered responsive className={statusTableStyle}>
                 <thead>
                     <tr>
-                        <th>Sez.</th>
                         <th>Ruolo</th>
                         <th>Nominativo</th>
                         <th>Codice Fiscale</th>
@@ -171,18 +172,18 @@ export function ElettoraleStatus() {
                             onMouseLeave={handleMouseLeave}
                             onClick={() => handleClick(group)}
                         >
-                            {group.map((c, rowIndex) => (
+                            <tr>
+                                <th colSpan={5} scope="rowgroup" className="text-start">
+                                    <b>Sezione #{group[0].sez}{group[0].speciale ? ' Speciale' : ''}</b>
+                                </th>
+                            </tr>
+                            {group.map(c => (
                                 <tr key={c.Id}>
-                                    {rowIndex === 0 && (
-                                        <td rowSpan={group.length} style={{ verticalAlign: 'middle', textAlign: 'center' }}>
-                                            <b>#{c.sez}{c.speciale ? 'S' : ''}</b>
-                                        </td>
-                                    )}
-                                    <td className="small">{getRuoloName(c.ruolo)}</td>
-                                    <td>{c.cognome} {capitalize(c.nome)}</td>
-                                    <td className="font-monospace">{c.codice_fiscale}</td>
-                                    <td className="font-monospace">{c.IBAN}</td>
-                                    <td className="small">{c.telefono}</td>
+                                    <td data-label="Ruolo" className="small">{getRuoloName(c.ruolo)}</td>
+                                    <td data-label="Nominativo">{c.cognome} {capitalizeAll(c.nome)}</td>
+                                    <td data-label="Cod. Fisc." className="font-monospace">{c.codice_fiscale}</td>
+                                    <td data-label="IBAN" className="font-monospace">{c.IBAN}</td>
+                                    <td data-label="Telefono" className="small">{c.telefono}</td>
                                 </tr>
                             ))}
                         </tbody>

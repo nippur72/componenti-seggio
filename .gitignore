@@ -4,3 +4,7 @@ dist/
 .env
 .env.*
 .DS_Store
+
+# Dati personali: mai nel repository
+*.csv
+db/import_dati_iniziali.sql

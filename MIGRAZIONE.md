@@ -43,8 +43,9 @@ quella variante si può ricostruire da zero se un giorno servisse controllo serv
 | `src/pages/elettorale/work/insert_componenti_seggi.sql` | struttura replicata in `db/seed.sql` |
 | `src/pages/elettorale/work/tabella_sql.csv` (dati reali 2024) | importabile con `tools/import_tabella_csv.mjs` |
 
-`src/pages/HomePage.tsx` e `src/components/SiteHeader.tsx` sono **nuovi** (nell'originale
-i link con PIN arrivavano da presenze e l'header era in `MainTag.tsx`).
+`src/components/SiteHeader.tsx` è **nuovo** (nell'originale l'header era in `MainTag.tsx`);
+la `HomePage` iniziale (generatore di link con PIN) è stata rimossa: `/` non dà accesso a
+nulla e le schede si aprono solo con l'URL/PIN.
 
 ### Equivalenze originali → attuali
 
@@ -108,9 +109,9 @@ npm run dev           # test locale su http://localhost:5173 (richiede Supabase 
 
 Setup Supabase e GitHub Pages: [DEPLOY.md](DEPLOY.md) (punti 1-4).
 
-Flusso browser: `/` → sezione 1 → `/#/elettorale/175412` → inserisci dati di un
-componente → "Invia dati" → `/#/elettorale_status` mostra la sezione completa
-e l'export CSV funziona. In Supabase, `audit_log` contiene l'UPDATE.
+Flusso browser: `/#/elettorale/175412` (PIN della sezione 1, generato con `sez_to_pin`)
+→ inserisci dati di un componente → "Invia dati" → `/#/elettorale_status` mostra la
+sezione completa e l'export CSV funziona. In Supabase, `audit_log` contiene l'UPDATE.
 
 ---
 

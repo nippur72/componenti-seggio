@@ -33,10 +33,6 @@ export interface ComponenteDiSeggio {
    iban_validating?: boolean;
 }
 
-function isSeggioSpeciale(seggio: ComponenteDiSeggio[]): boolean {
-   return seggio.some(c => c.speciale);
-}
-
 class ElettoraleState {
    seggio: ComponenteDiSeggio[] = [];
    originalData: ComponenteDiSeggio[] = [];
@@ -149,6 +145,17 @@ export function ComponentiSeggi() {
       enabled: sez > 0
    });
 
+   // state e' un singleton di modulo condiviso tra le sezioni: quando cambia la
+   // sezione va azzerato lo stato transitorio, altrimenti editing_id/showSuccess di
+   // un'altra sezione restano attivi e la pagina appare vuota finche' non si ricarica.
+   // Deve precedere l'effetto di init, perche' gli effetti girano in ordine.
+   useEffect(() => {
+      state.editing_id = undefined;
+      state.showSuccess = false;
+      state.seggio = [];
+      state.originalData = [];
+   }, [sez, speciale]);
+
    useEffect(() => {
       if (data) state.init(data);
    }, [data]);
@@ -171,7 +178,7 @@ export function ComponentiSeggi() {
 
    return (
       <Frame>
-         <h2 className="center">Componenti del Seggio Elettorale {isSeggioSpeciale(state.seggio) ? 'Speciale' : ''} n. {sez}</h2>
+         <h2 className="center">Sezione N. {sez}{speciale ? ' Speciale' : ''}</h2>
 
          {snap.editing_id === undefined ? snap.seggio.map(c =>
             <Card key={c.Id} className="mb-3 shadow-sm">
