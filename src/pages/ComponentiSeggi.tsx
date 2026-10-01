@@ -135,10 +135,6 @@ export function ComponentiSeggi() {
    const snap = useSnapshot(state);
    const { sez, speciale } = pin_to_sez(pin);
 
-   if (sez === 0) {
-      return <Frame><Alert color="danger">Sezione non valida.</Alert></Frame>;
-   }
-
    const { data, isLoading, error } = useQuery({
       queryKey: ['componenti', sez, speciale],
       queryFn: () => getSeggio(sez, speciale),
@@ -159,6 +155,13 @@ export function ComponentiSeggi() {
    useEffect(() => {
       if (data) state.init(data);
    }, [data]);
+
+   // I return anticipati devono stare dopo TUTTI gli hook: un pin non valido
+   // cambia il numero di hook tra un render e l'altro (React error #300) quando
+   // si passa da una sezione valida a una non valida senza ricaricare la pagina.
+   if (sez === 0) {
+      return <Frame><Alert color="danger">Sezione non valida.</Alert></Frame>;
+   }
 
    if (isLoading) return <Frame><Spinner>Caricamento...</Spinner></Frame>;
    if (error) return <Frame><Alert color="danger">Errore: {error.message}</Alert></Frame>;
