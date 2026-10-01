@@ -4,7 +4,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { css } from "@emotion/css";
 import { ComponenteDiSeggio } from "./ComponentiSeggi";
-import { Table, ButtonGroup, Button, Badge } from "reactstrap";
+import { Table, ButtonGroup, Button, Badge, Input, Label, FormGroup } from "reactstrap";
 import { Frame } from "../components/Frame";
 import { getAllSeggi } from "../lib/elettorale";
 import { Spinner } from "../tags/Spinner";
@@ -65,6 +65,18 @@ const statusTableStyle = css({
     }
 });
 
+// campo numerico senza le frecce up/down dei browser
+const sezioneInputStyle = css({
+    width: '6rem',
+    '&::-webkit-outer-spin-button, &::-webkit-inner-spin-button': {
+        WebkitAppearance: 'none',
+        margin: 0
+    },
+    '&[type=number]': {
+        MozAppearance: 'textfield'
+    }
+});
+
 // con cognome "---" il componente e' considerato completato (seggio non nominato / da escludere)
 function isCompleto(c: ComponenteDiSeggio): boolean {
     return c.cognome.trim() === "---" || (!!c.nome && !!c.cognome && !!c.codice_fiscale);
@@ -79,6 +91,8 @@ export function ElettoraleStatus() {
     const history = useHistory();
     const [filter, setFilter] = useState<'tutti' | 'completi' | 'da_completare' | 'sezioni_incomplete'>('tutti');
     const [hoveredGroupKey, setHoveredGroupKey] = useState<string | null>(null);
+    const [sezioneInput, setSezioneInput] = useState('');
+    const [soloSpeciale, setSoloSpeciale] = useState(false);
 
     if (isLoading) return <Frame><Spinner>Caricamento...</Spinner></Frame>;
     if (error) return <Frame><Alert color="danger">Errore: {error.message}</Alert></Frame>;
@@ -94,7 +108,11 @@ export function ElettoraleStatus() {
                                filter === 'da_completare' ? daCompletare :
                                sezioniIncomplete;
 
-    const groupedComponenti = filteredComponenti?.reduce((acc, c) => {
+    const sezioneQuery = sezioneInput.trim();
+    const visibiliComponenti = sezioneQuery === '' ? filteredComponenti :
+        filteredComponenti?.filter(c => String(c.sez) === sezioneQuery && c.speciale === soloSpeciale);
+
+    const groupedComponenti = visibiliComponenti?.reduce((acc, c) => {
         const key = `${c.sez}-${c.speciale}`;
         if (!acc[key]) {
             acc[key] = [];
@@ -121,8 +139,8 @@ export function ElettoraleStatus() {
     };
 
     const handleExportCsv = () => {
-        if (!filteredComponenti) return;
-        exportComponentiToCsv(filteredComponenti);
+        if (!visibiliComponenti) return;
+        exportComponentiToCsv(visibiliComponenti);
     };
 
     return (
@@ -144,6 +162,27 @@ export function ElettoraleStatus() {
                        Sezioni Incomplete <Badge pill>{incompleteSezioniKeys.size}</Badge>
                    </Button>
                </ButtonGroup>
+            </div>
+
+            <div className="d-flex justify-content-center align-items-center mb-3">
+                <Label for="vai-a-sezione" className="me-2 mb-0 text-nowrap">Vai a sezione:</Label>
+                <Input
+                    id="vai-a-sezione"
+                    type="number"
+                    inputMode="numeric"
+                    value={sezioneInput}
+                    onChange={e => setSezioneInput(e.target.value)}
+                    className={sezioneInputStyle}
+                />
+                <FormGroup check className="ms-3 mb-0">
+                    <Input
+                        id="sezione-speciale"
+                        type="checkbox"
+                        checked={soloSpeciale}
+                        onChange={e => setSoloSpeciale(e.target.checked)}
+                    />
+                    <Label for="sezione-speciale" check>speciale</Label>
+                </FormGroup>
             </div>
 
             <Table bordered responsive className={statusTableStyle}>
